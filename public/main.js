@@ -52,7 +52,6 @@ loginInput.addEventListener("keyup", (e) => {
     let name = loginInput.value.trim();
     if (name != "") {
       username = name;
-      document.title = "Chat (" + username + ")";
 
       socket.emit("join-request", username);
     }
@@ -75,6 +74,8 @@ textInput.addEventListener("keyup", (e) => {
 socket.on("user-ok", (list) => {
   loginPage.style.display = "none";
   chatPage.style.display = "flex";
+
+  document.title = "Chat (" + username + ")";
 
   if (reset == 0) {
     reset = true;
