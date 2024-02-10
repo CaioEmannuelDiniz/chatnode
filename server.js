@@ -14,18 +14,36 @@ app.use(express.static(path.join(__dirname, "public")));
 let connectedUsers = [];
 
 io.on("connection", (socket) => {
-  console.log("Conected");
+  console.log("Conected/Reconnected");
 
   socket.on("join-request", (username) => {
-    socket.username = username;
-    connectedUsers.push(username);
-    console.log(connectedUsers);
+    if (connectedUsers.length != 0) {
+      let verifyUser = connectedUsers.includes(username);
 
-    socket.emit("user-ok", connectedUsers);
-    socket.broadcast.emit("list-update", {
-      joined: username,
-      list: connectedUsers,
-    });
+      if (!verifyUser) {
+        socket.username = username;
+        connectedUsers.push(username);
+        console.log(connectedUsers);
+
+        socket.emit("user-ok", connectedUsers);
+        socket.broadcast.emit("list-update", {
+          joined: username,
+          list: connectedUsers,
+        });
+      } else {
+        socket.emit("user-fail", username);
+      }
+    } else {
+      socket.username = username;
+      connectedUsers.push(username);
+      console.log(connectedUsers);
+
+      socket.emit("user-ok", connectedUsers);
+      socket.broadcast.emit("list-update", {
+        joined: username,
+        list: connectedUsers,
+      });
+    }
   });
 
   socket.on("disconnect", () => {

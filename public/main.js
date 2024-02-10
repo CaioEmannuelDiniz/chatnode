@@ -2,6 +2,8 @@ const socket = io();
 let username = "";
 let userList = [];
 
+let reset = false;
+
 let loginPage = document.querySelector("#loginPage");
 let chatPage = document.querySelector("#chatPage");
 
@@ -28,8 +30,17 @@ function addMessage(type, user, msg) {
       ul.innerHTML += '<li class="m-status">' + msg + "</li>";
       break;
     case "msg":
-      ul.innerHTML +=
-        '<li class="m-txt"><span>' + user + ": </span>" + msg + "</li>";
+      if (username == user) {
+        ul.innerHTML +=
+          '<li class="m-txt"><span class="me">' +
+          user +
+          ": </span>" +
+          msg +
+          "</li>";
+      } else {
+        ul.innerHTML +=
+          '<li class="m-txt"><span>' + user + ": </span>" + msg + "</li>";
+      }
       break;
   }
 }
@@ -51,7 +62,7 @@ loginInput.addEventListener("keyup", (e) => {
 textInput.addEventListener("keyup", (e) => {
   if (e.keyCode === 13) {
     let txt = textInput.value.trim();
-    textInput.value = " ";
+    textInput.value = "";
     if (txt != "") {
       //evitar ta usando recurso do servido ja que a mensagem para o outro vai ser exibida via broadcast
       addMessage("msg", username, txt);
@@ -65,11 +76,19 @@ socket.on("user-ok", (list) => {
   loginPage.style.display = "none";
   chatPage.style.display = "flex";
 
-  addMessage("status", null, "Conectado!");
+  if (reset == 0) {
+    reset = true;
+    addMessage("status", null, "Conectado!");
+  }
 
   textInput.focus();
   userList = list;
   renderUserList();
+});
+
+socket.on("user-fail", (name) => {
+  loginInput.value = "";
+  loginInput.placeholder = `Usuário ${name} já existente`;
 });
 
 socket.on("list-update", (data) => {
@@ -87,4 +106,24 @@ socket.on("list-update", (data) => {
 
 socket.on("show-msg", (data) => {
   addMessage("msg", data.username, data.message);
+});
+
+socket.on("disconnect", () => {
+  addMessage("status", null, "você foi desconectado!");
+  userList = [];
+  renderUserList();
+});
+
+socket.on("connect_error", () => {
+  addMessage("status", null, "Tentando reconectar...");
+});
+
+socket.on("connect", () => {
+  if (reset == true) {
+    addMessage("status", null, "Reconectado!");
+
+    if (username != "") {
+      socket.emit("join-request", username);
+    }
+  }
 });
